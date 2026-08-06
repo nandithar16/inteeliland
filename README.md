@@ -50,6 +50,26 @@ Open the local URL shown by Vite in your browser.
 
 https://github.com/nandithar16/inteeliland
 
+## Deployment
+
+### Vercel
+
+1. Sign in to Vercel at https://vercel.com.
+2. Import the `inteeliland` repository.
+3. Use the default build settings:
+   - Framework Preset: `Vite`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+4. Deploy and visit the generated URL.
+
+### Netlify
+
+1. Sign in to Netlify at https://app.netlify.com.
+2. Create a new site from Git.
+3. Connect the `inteeliland` repository.
+4. Set the build command to `npm run build` and the publish directory to `dist`.
+5. Deploy the site.
+
 ## About
 
 This project was updated with a modern, elegant design and better back-navigation behavior while preserving its core functionality.
