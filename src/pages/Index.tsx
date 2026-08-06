@@ -1,34 +1,27 @@
 import { useState } from "react";
-import { MainNavigation } from "@/components/screens/main-navigation";
-import { LandParcelEntry } from "@/components/screens/land-parcel-entry";
-import { AssessmentDashboard } from "@/components/screens/assessment-dashboard";
+import MainNavigation from "@/components/screens/main-navigation";
 import LandParcelDiscovery from "@/components/screens/land-parcel-discovery";
 import { FilteredLandParcels } from "@/components/screens/filtered-land-parcels";
 import { DetailedLandParcelAnalysis } from "@/components/screens/detailed-land-parcel-analysis";
 
 type Screen = 
   | "main" 
-  | "land-entry" 
-  | "assessment" 
   | "discovery" 
   | "filtered-results"
   | "detailed-analysis";
 
-interface AssessmentData {
+interface ParcelData {
   googleMapLink: string;
   latitude: string;
   longitude: string;
+  parcelId?: string;
 }
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("main");
-  const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
+  const [parcelData, setParcelData] = useState<ParcelData | null>(null);
   const [discoveryFilters, setDiscoveryFilters] = useState<any>(null);
   const [selectedParcelId, setSelectedParcelId] = useState<string | null>(null);
-
-  const handleAccessLandParcel = () => {
-    setCurrentScreen("land-entry");
-  };
 
   const handleDiscoverLandParcel = () => {
     setCurrentScreen("discovery");
@@ -36,18 +29,24 @@ const Index = () => {
 
   const handleBackToMain = () => {
     setCurrentScreen("main");
-    setAssessmentData(null);
+    setParcelData(null);
     setDiscoveryFilters(null);
     setSelectedParcelId(null);
   };
 
-  const handleContinueToAssessment = (data: AssessmentData) => {
-    setAssessmentData(data);
-    setCurrentScreen("assessment");
+  const handleFilterByCost = (maxCost: number) => {
+    setDiscoveryFilters({ type: "cost", maxCost });
+    setCurrentScreen("filtered-results");
   };
 
-  const handleBackToEntry = () => {
-    setCurrentScreen("land-entry");
+  const handleFilterBySize = (minSize: number, maxSize: number) => {
+    setDiscoveryFilters({ type: "size", minSize, maxSize });
+    setCurrentScreen("filtered-results");
+  };
+
+  const handleFilterByDistance = (maxDistance: number) => {
+    setDiscoveryFilters({ type: "distance", maxDistance });
+    setCurrentScreen("filtered-results");
   };
 
   const handleBackToDiscovery = () => {
@@ -70,29 +69,14 @@ const Index = () => {
   };
 
   switch (currentScreen) {
-    case "land-entry":
+    case "detailed-analysis":
       return (
-        <LandParcelEntry
-          onBack={handleBackToMain}
-          onContinue={handleContinueToAssessment}
+        <DetailedLandParcelAnalysis
+          parcelId={selectedParcelId || ""}
+          data={parcelData}
+          onBack={selectedParcelId ? handleBackToFilteredResults : handleBackToMain}
         />
       );
-
-    case "assessment":
-      return assessmentData ? (
-        <AssessmentDashboard
-          data={assessmentData}
-          onBack={handleBackToEntry}
-        />
-      ) : null;
-
-    case "detailed-analysis":
-      return selectedParcelId ? (
-        <DetailedLandParcelAnalysis
-          parcelId={selectedParcelId}
-          onBack={handleBackToFilteredResults}
-        />
-      ) : null;
 
     case "discovery":
       return (
@@ -114,8 +98,10 @@ const Index = () => {
     default:
       return (
         <MainNavigation
-          onAccessLandParcel={handleAccessLandParcel}
           onDiscoverLandParcel={handleDiscoverLandParcel}
+          onFilterByCost={handleFilterByCost}
+          onFilterBySize={handleFilterBySize}
+          onFilterByDistance={handleFilterByDistance}
         />
       );
   }

@@ -1,64 +1,210 @@
-import { Button } from "@/components/ui/button";
-import { FeatureCard } from "@/components/ui/feature-card";
-import { Header } from "@/components/layout/header";
-import { MapPin, Search, Navigation, Target, TrendingUp, Shield, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
-import heroBackground from "@/assets/hero-background.jpg";
+import {
+  Target,
+  Search,
+  Sparkles,
+  CheckCircle2,
+  ArrowRight,
+  DollarSign,
+  Maximize2,
+  Navigation,
+  MapPin,
+  Loader2,
+  Link2,
+} from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ for redirect
+import Map, { Marker, Popup, NavigationControl } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 interface MainNavigationProps {
-  onAccessLandParcel: () => void;
   onDiscoverLandParcel: () => void;
+  onFilterByCost: (maxCost: number) => void;
+  onFilterBySize: (minSize: number, maxSize: number) => void;
+  onFilterByDistance: (arg: number | { maxDistance: number; placeCoordinates?: { latitude: number; longitude: number } }) => void;
 }
 
-export function MainNavigation({ onAccessLandParcel, onDiscoverLandParcel }: MainNavigationProps) {
+async function parseGoogleMapsLink(url: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    if (url.includes("goo.gl") || url.includes("maps.app.goo.gl")) {
+      try {
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl, { redirect: "follow" });
+        const html = await response.text();
+
+        const coordMatch = html.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+        if (coordMatch) return { lat: parseFloat(coordMatch[1]), lng: parseFloat(coordMatch[2]) };
+
+        const metaMatch = html.match(
+          /content="https:\/\/www\.google\.com\/maps[^"]*@(-?\d+\.?\d*),(-?\d+\.?\d*)"/
+        );
+        if (metaMatch) return { lat: parseFloat(metaMatch[1]), lng: parseFloat(metaMatch[2]) };
+      } catch (e) {
+        console.error("Error expanding shortened URL:", e);
+      }
+    }
+
+    const regexes = [
+      /@(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+      /\/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+      /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+      /\/maps\/place\/(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+      /ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+    ];
+
+    for (const regex of regexes) {
+      const match = url.match(regex);
+      if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export default function MainNavigation({
+  onDiscoverLandParcel,
+  onFilterByCost,
+  onFilterBySize,
+  onFilterByDistance,
+}: MainNavigationProps) {
+  const navigate = useNavigate();
+
+  const [showLocationSearch, setShowLocationSearch] = useState(false);
+  const [mapLink, setMapLink] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isExpanding, setIsExpanding] = useState(false);
+  const [linkError, setLinkError] = useState("");
+  const [showPopup, setShowPopup] = useState(true);
+
+  const [showCostInput, setShowCostInput] = useState(false);
+  const [costValue, setCostValue] = useState("");
+  const [showSizeInput, setShowSizeInput] = useState(false);
+  const [minSize, setMinSize] = useState("");
+  const [maxSize, setMaxSize] = useState("");
+  const [showDistanceInput, setShowDistanceInput] = useState(false);
+  const [distanceValue, setDistanceValue] = useState("");
+
+  const handleMapLinkChange = async (value: string) => {
+    setMapLink(value);
+    setLinkError("");
+
+    if (value.trim()) {
+      if (value.includes("goo.gl") || value.includes("maps.app.goo.gl")) {
+        setIsExpanding(true);
+        setLinkError("Expanding shortened URL...");
+      }
+
+      const coords = await parseGoogleMapsLink(value);
+      setIsExpanding(false);
+
+      if (coords) {
+        setLatitude(coords.lat.toString());
+        setLongitude(coords.lng.toString());
+        setLinkError("");
+      } else {
+        setLatitude("");
+        setLongitude("");
+        if (value.length > 10) {
+          setLinkError(
+            "Could not extract coordinates. Try copying the URL from your browser's address bar."
+          );
+        }
+      }
+    } else {
+      setLatitude("");
+      setLongitude("");
+      setIsExpanding(false);
+    }
+  };
+
+  // ✅ Redirects to detailed land parcel page
+  const handleLocationSubmit = async () => {
+    if (!mapLink.trim()) {
+      alert("Please paste a Google Maps link");
+      return;
+    }
+
+    if (!latitude || !longitude) {
+      alert("Could not extract coordinates from the link. Please try again.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      navigate("/detailed-land-parcel", {
+        state: {
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+          googleMapLink: mapLink,
+        },
+      });
+
+      setIsProcessing(false);
+    } catch (error) {
+      console.error("Navigation error:", error);
+      alert("Failed to navigate. Please try again.");
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCostSubmit = () => {
+    const cost = parseFloat(costValue);
+    if (!isNaN(cost) && cost > 0) {
+      onFilterByCost(cost);
+      setShowCostInput(false);
+      setCostValue("");
+    } else alert("Please enter a valid cost value");
+  };
+
+  const handleSizeSubmit = () => {
+    const min = parseFloat(minSize) || 0;
+    const max = parseFloat(maxSize) || Infinity;
+    if (min >= 0 && max > 0 && min <= max) {
+      onFilterBySize(min, max);
+      setShowSizeInput(false);
+      setMinSize("");
+      setMaxSize("");
+    } else alert("Please enter valid size range");
+  };
+
+  const handleDistanceSubmit = () => {
+    const distance = parseFloat(distanceValue);
+    if (!isNaN(distance) && distance > 0) {
+      const coords = latitude && longitude && !isNaN(parseFloat(latitude)) && !isNaN(parseFloat(longitude))
+        ? { latitude: parseFloat(latitude), longitude: parseFloat(longitude) }
+        : undefined;
+      if (coords) onFilterByDistance({ maxDistance: distance, placeCoordinates: coords });
+      else onFilterByDistance(distance);
+      setShowDistanceInput(false);
+      setDistanceValue("");
+    } else alert("Please enter a valid distance value");
+  };
+
+  const isValid = latitude && longitude;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <Header />
-      
-      {/* Hero Section with Enhanced Design */}
-      <div 
-        className="relative h-[70vh] flex items-center justify-center overflow-hidden"
-        style={{
-          backgroundImage: `url(${heroBackground})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
+      {/* Header Section */}
+      <div
+        className="relative h-[40vh] flex items-center justify-center overflow-hidden"
+        style={{ backgroundImage: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
       >
-        {/* Gradient Overlays */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-900/95 via-indigo-900/90 to-purple-900/95" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30" />
-        
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-700" />
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-3xl" />
-        </div>
-
         <div className="relative z-10 text-center text-white px-4 max-w-5xl mx-auto">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-8">
             <Sparkles className="h-4 w-4 text-yellow-300" />
             <span className="text-sm font-medium">Professional Land Assessment Platform</span>
           </div>
-
-          <h1 className="text-6xl md:text-7xl font-extrabold mb-6 tracking-tight animate-fade-in-up">
+            <h1 className="text-6xl md:text-7xl font-extrabold mb-6 tracking-tight">
             <span className="bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
-              Legacy Line
+              InteeliLand
             </span>
           </h1>
-          
-          <p className="text-2xl md:text-3xl mb-6 font-semibold text-blue-100 animate-fade-in-up delay-100">
-            Land Parcel Assessment Tool
-          </p>
-          
-          <p className="text-lg md:text-xl opacity-90 max-w-3xl mx-auto leading-relaxed text-slate-200 animate-fade-in-up delay-200">
-            Transform your land investment decisions with AI-powered analysis, comprehensive infrastructure scoring, 
-            and real-time market intelligence for smarter property evaluation
-          </p>
-
-          {/* Trust Indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-8 mt-12 animate-fade-in-up delay-300">
+          <div className="flex flex-wrap items-center justify-center gap-8 mt-12">
             <div className="flex items-center gap-2 text-sm">
               <CheckCircle2 className="h-5 w-5 text-green-400" />
               <span>GPS Accurate</span>
@@ -73,221 +219,262 @@ export function MainNavigation({ onAccessLandParcel, onDiscoverLandParcel }: Mai
             </div>
           </div>
         </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex items-start justify-center p-2">
-            <div className="w-1.5 h-3 bg-white/60 rounded-full" />
-          </div>
-        </div>
       </div>
 
-      {/* Main Content Section */}
-      <div className="container mx-auto px-4 py-20 max-w-7xl">
-        {/* Section Header */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 mb-4">
-            <Target className="h-4 w-4" />
-            <span className="text-sm font-semibold">GET STARTED</span>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
-            Choose Your Assessment Path
-          </h2>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            Whether you have specific coordinates or want to explore opportunities, 
-            we've got the perfect solution for your land assessment needs
-          </p>
+      {/* Location Entry */}
+      <div className="container mx-auto px-4 py-20 max-w-6xl">
+        <div className="mb-6">
+          <button
+            onClick={() => setShowLocationSearch(!showLocationSearch)}
+            disabled={isProcessing}
+            className="w-full py-4 px-6 bg-white rounded-[2rem] shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-blue-200 hover:border-blue-400 flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-button">
+                {isProcessing ? (
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                ) : (
+                  <Target className="h-5 w-5 text-white" />
+                )}
+              </div>
+              <span className="text-lg font-semibold text-slate-800">
+                {isProcessing ? "Processing Location..." : "Enter Location"}
+              </span>
+            </div>
+            {!isProcessing && (
+              <ArrowRight
+                className={`h-5 w-5 text-slate-400 group-hover:text-blue-600 transition-all duration-300 ${
+                  showLocationSearch ? "rotate-90" : ""
+                }`}
+              />
+            )}
+          </button>
+
+          {showLocationSearch && (
+            <div className="mt-4 grid lg:grid-cols-2 gap-6">
+              {/* Left panel */}
+              <div className="p-6 bg-white rounded-[2rem] shadow-xl border border-blue-100 glass-panel">
+                <div className="flex items-center gap-2 mb-4">
+                  <Link2 className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-semibold text-gray-800">Land Parcel Details</h3>
+                </div>
+
+                <input
+                  type="text"
+                  value={mapLink}
+                  onChange={(e) => handleMapLinkChange(e.target.value)}
+                  placeholder="Paste Google Maps URL here..."
+                  disabled={isProcessing}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 mb-3"
+                />
+
+                {linkError && (
+                  <p className={`text-xs mt-1 ${isExpanding ? "text-blue-600" : "text-red-600"}`}>
+                    {linkError}
+                  </p>
+                )}
+
+                {isValid && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg mb-3">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Coordinates ready for assessment</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleLocationSubmit}
+                  disabled={!isValid || isProcessing}
+                  className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" /> Processing...
+                    </>
+                  ) : (
+                    <>Continue to Assessment →</>
+                  )}
+                </button>
+              </div>
+
+              {/* Right panel - Live Map */}
+              <div className="p-6 bg-white rounded-[2rem] shadow-xl border border-blue-100 glass-panel">
+                <div className="flex items-center gap-2 mb-4">
+                  <MapPin className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-semibold text-gray-800">Live Map Preview</h3>
+                </div>
+
+                <div className="h-[400px] rounded-lg overflow-hidden border border-gray-200">
+                  {isValid ? (
+                    <Map
+                      initialViewState={{
+                        latitude: parseFloat(latitude),
+                        longitude: parseFloat(longitude),
+                        zoom: 14,
+                      }}
+                      style={{ width: "100%", height: "100%" }}
+                      mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+                    >
+                      <NavigationControl position="top-right" />
+                      <Marker latitude={parseFloat(latitude)} longitude={parseFloat(longitude)} color="red" />
+                      {showPopup && (
+                        <Popup
+                          latitude={parseFloat(latitude)}
+                          longitude={parseFloat(longitude)}
+                          anchor="top"
+                          onClose={() => setShowPopup(false)}
+                        >
+                          <div className="font-semibold">Main Land Parcel</div>
+                        </Popup>
+                      )}
+                    </Map>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-gray-50">
+                      <MapPin className="h-16 w-16 mb-3 opacity-30" />
+                      <p className="font-medium">Map preview will appear here</p>
+                      <p className="text-sm">when you paste a Google Maps link</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Main Action Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
-          {/* Access Card */}
-          <div 
-            onClick={onAccessLandParcel}
-            className="group relative bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-slate-200 hover:border-blue-300 hover:-translate-y-2"
-          >
-            {/* Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            
-            {/* Content */}
-            <div className="relative z-10 p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Target className="h-7 w-7 text-white" />
-                </div>
-                <ArrowRight className="h-6 w-6 text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
-              </div>
-
-              <h3 className="text-2xl font-bold text-slate-900 group-hover:text-white mb-3 transition-colors duration-300">
-                Access a Land Parcel
-              </h3>
-              
-              <p className="text-slate-600 group-hover:text-white/90 mb-6 transition-colors duration-300">
-                Enter specific coordinates or paste Google Maps link for instant detailed parcel analysis and scoring
-              </p>
-
-              <div className="space-y-3 mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-blue-100 group-hover:bg-white/20 flex items-center justify-center transition-colors duration-300">
-                    <Navigation className="h-4 w-4 text-blue-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                  <span className="text-sm text-slate-700 group-hover:text-white transition-colors duration-300">
-                    GPS coordinates or Google Maps links
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-blue-100 group-hover:bg-white/20 flex items-center justify-center transition-colors duration-300">
-                    <MapPin className="h-4 w-4 text-blue-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                  <span className="text-sm text-slate-700 group-hover:text-white transition-colors duration-300">
-                    Automatic coordinate extraction
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-blue-100 group-hover:bg-white/20 flex items-center justify-center transition-colors duration-300">
-                    <Sparkles className="h-4 w-4 text-blue-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                  <span className="text-sm text-slate-700 group-hover:text-white transition-colors duration-300">
-                    Instant comprehensive analysis
-                  </span>
-                </div>
-              </div>
-
-              <Button 
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg group-hover:bg-white group-hover:text-blue-600 transition-all duration-300"
-                onClick={onAccessLandParcel}
-              >
-                <span className="font-semibold">Enter Coordinates</span>
-                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Discover Card */}
-          <div 
+        {/* Filter Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
             onClick={onDiscoverLandParcel}
-            className="group relative bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-slate-200 hover:border-emerald-300 hover:-translate-y-2"
+            className="py-4 px-6 bg-white rounded-[2rem] shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-emerald-200 hover:border-emerald-400 flex items-center justify-between group"
           >
-            {/* Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-green-500 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            
-            {/* Content */}
-            <div className="relative z-10 p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Search className="h-7 w-7 text-white" />
-                </div>
-                <ArrowRight className="h-6 w-6 text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                <Search className="h-5 w-5 text-white" />
               </div>
-
-              <h3 className="text-2xl font-bold text-slate-900 group-hover:text-white mb-3 transition-colors duration-300">
-                Discover Land Parcel
-              </h3>
-              
-              <p className="text-slate-600 group-hover:text-white/90 mb-6 transition-colors duration-300">
-                Browse and filter available parcels with advanced search and intelligent recommendation algorithms
-              </p>
-
-              <div className="space-y-3 mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-100 group-hover:bg-white/20 flex items-center justify-center transition-colors duration-300">
-                    <Search className="h-4 w-4 text-emerald-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                  <span className="text-sm text-slate-700 group-hover:text-white transition-colors duration-300">
-                    Advanced filtering and search options
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-100 group-hover:bg-white/20 flex items-center justify-center transition-colors duration-300">
-                    <Target className="h-4 w-4 text-emerald-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                  <span className="text-sm text-slate-700 group-hover:text-white transition-colors duration-300">
-                    LAS & VAS intelligent scoring system
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-100 group-hover:bg-white/20 flex items-center justify-center transition-colors duration-300">
-                    <TrendingUp className="h-4 w-4 text-emerald-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                  <span className="text-sm text-slate-700 group-hover:text-white transition-colors duration-300">
-                    Market trends and investment insights
-                  </span>
-                </div>
-              </div>
-
-              <Button 
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg group-hover:bg-white group-hover:text-emerald-600 transition-all duration-300"
-                onClick={onDiscoverLandParcel}
-              >
-                <span className="font-semibold">Browse Parcels</span>
-                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-              </Button>
+              <span className="text-lg font-semibold text-slate-800">Select by Area</span>
             </div>
-          </div>
+            <ArrowRight className="h-5 w-5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all duration-300" />
+          </button>
+
+          <button
+            onClick={() => setShowCostInput(!showCostInput)}
+            className="py-4 px-6 bg-white rounded-[2rem] shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-amber-200 hover:border-amber-400 flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-lg font-semibold text-slate-800">Select by Cost</span>
+            </div>
+            <ArrowRight
+              className={`h-5 w-5 text-slate-400 group-hover:text-amber-600 transition-all duration-300 ${
+                showCostInput ? "rotate-90" : ""
+              }`}
+            />
+          </button>
+
+          <button
+            onClick={() => setShowSizeInput(!showSizeInput)}
+            className="py-4 px-6 bg-white rounded-[2rem] shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-purple-200 hover:border-purple-400 flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                <Maximize2 className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-lg font-semibold text-slate-800">Select by Size</span>
+            </div>
+            <ArrowRight
+              className={`h-5 w-5 text-slate-400 group-hover:text-purple-600 transition-all duration-300 ${
+                showSizeInput ? "rotate-90" : ""
+              }`}
+            />
+          </button>
+
+          <button
+            onClick={() => setShowDistanceInput(!showDistanceInput)}
+            className="py-4 px-6 bg-white rounded-[2rem] shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-rose-200 hover:border-rose-400 flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center">
+                <Navigation className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-lg font-semibold text-slate-800">Select by Distance</span>
+            </div>
+            <ArrowRight
+              className={`h-5 w-5 text-slate-400 group-hover:text-rose-600 transition-all duration-300 ${
+                showDistanceInput ? "rotate-90" : ""
+              }`}
+            />
+          </button>
         </div>
 
-        {/* Feature Highlights with Enhanced Design */}
-        <div className="bg-white rounded-3xl shadow-xl p-12 border border-slate-200">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-slate-900 mb-4">
-              Why Choose Legacy Line?
-            </h3>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Industry-leading technology meets comprehensive data analysis
-            </p>
-          </div>
+        {/* Inline filter inputs (Cost / Size / Distance) */}
+        <div className="mt-4">
+          {showCostInput && (
+            <div className="mb-4 p-4 bg-white rounded-[2rem] shadow-xl border border-amber-100 glass-panel">
+              <div className="flex items-center gap-3 mb-2">
+                <DollarSign className="h-4 w-4 text-amber-600" />
+                <span className="font-medium">Enter maximum price per sqft (₹)</span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  type="number"
+                  value={costValue}
+                  onChange={(e) => setCostValue(e.target.value)}
+                  className="flex-1 min-w-[12rem] px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-amber-300"
+                  placeholder="e.g., 95"
+                />
+                <button onClick={handleCostSubmit} className="px-6 py-3 bg-amber-500 text-white rounded-2xl shadow-button hover:bg-amber-600 transition-all duration-300">Search</button>
+              </div>
+            </div>
+          )}
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center p-6 rounded-2xl hover:bg-slate-50 transition-colors duration-300 group">
-              <div className="h-20 w-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <MapPin className="h-10 w-10 text-white" />
+          {showSizeInput && (
+            <div className="mb-4 p-4 bg-white rounded-[2rem] shadow-xl border border-purple-100 glass-panel">
+              <div className="flex items-center gap-3 mb-2">
+                <Maximize2 className="h-4 w-4 text-purple-600" />
+                <span className="font-medium">Enter size range (sqft)</span>
               </div>
-              <h4 className="font-bold text-xl text-slate-900 mb-3">Precise Location Analysis</h4>
-              <p className="text-slate-600 leading-relaxed">
-                Military-grade GPS accuracy with real-time satellite mapping and coordinate verification
-              </p>
-            </div>
-            
-            <div className="text-center p-6 rounded-2xl hover:bg-slate-50 transition-colors duration-300 group">
-              <div className="h-20 w-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Target className="h-10 w-10 text-white" />
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  type="number"
+                  value={minSize}
+                  onChange={(e) => setMinSize(e.target.value)}
+                  className="w-full md:w-1/2 min-w-[10rem] px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-purple-300"
+                  placeholder="Min"
+                />
+                <input
+                  type="number"
+                  value={maxSize}
+                  onChange={(e) => setMaxSize(e.target.value)}
+                  className="w-full md:w-1/2 min-w-[10rem] px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-purple-300"
+                  placeholder="Max"
+                />
+                <button onClick={handleSizeSubmit} className="px-6 py-3 bg-purple-500 text-white rounded-2xl shadow-button hover:bg-purple-600 transition-all duration-300">Search</button>
               </div>
-              <h4 className="font-bold text-xl text-slate-900 mb-3">Smart Scoring System</h4>
-              <p className="text-slate-600 leading-relaxed">
-                Advanced LAS & VAS algorithms delivering comprehensive investment evaluation metrics
-              </p>
             </div>
-            
-            <div className="text-center p-6 rounded-2xl hover:bg-slate-50 transition-colors duration-300 group">
-              <div className="h-20 w-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Shield className="h-10 w-10 text-white" />
-              </div>
-              <h4 className="font-bold text-xl text-slate-900 mb-3">Market Intelligence</h4>
-              <p className="text-slate-600 leading-relaxed">
-                Real-time infrastructure data, development tracking, and predictive market analysis
-              </p>
-            </div>
-          </div>
-        </div>
+          )}
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
-          <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl">
-            <div className="text-4xl font-bold text-blue-600 mb-2">10K+</div>
-            <div className="text-sm text-slate-600 font-medium">Parcels Analyzed</div>
-          </div>
-          <div className="text-center p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl">
-            <div className="text-4xl font-bold text-emerald-600 mb-2">95%</div>
-            <div className="text-sm text-slate-600 font-medium">Accuracy Rate</div>
-          </div>
-          <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl">
-            <div className="text-4xl font-bold text-purple-600 mb-2">24/7</div>
-            <div className="text-sm text-slate-600 font-medium">Real-time Updates</div>
-          </div>
-          <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl">
-            <div className="text-4xl font-bold text-orange-600 mb-2">50+</div>
-            <div className="text-sm text-slate-600 font-medium">Data Sources</div>
-          </div>
+          {showDistanceInput && (
+            <div className="mb-4 p-4 bg-white rounded-[2rem] shadow-xl border border-rose-100 glass-panel">
+              <div className="flex items-center gap-3 mb-2">
+                <Navigation className="h-4 w-4 text-rose-600" />
+                <span className="font-medium">Enter distance (km) — uses pasted map coordinates if available</span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  type="number"
+                  value={distanceValue}
+                  onChange={(e) => setDistanceValue(e.target.value)}
+                  className="flex-1 min-w-[12rem] px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-rose-300"
+                  placeholder="e.g., 5"
+                />
+                <button onClick={handleDistanceSubmit} className="px-6 py-3 bg-rose-500 text-white rounded-2xl shadow-button hover:bg-rose-600 transition-all duration-300">Search</button>
+              </div>
+              {latitude && longitude && (
+                <p className="text-xs text-slate-500 mt-2">Using coordinates: {latitude}, {longitude}</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

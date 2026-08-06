@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,12 @@ interface LandParcelDiscoveryProps {
 }
 
 export default function LandParcelDiscovery({ onBack, onDiscover }: LandParcelDiscoveryProps) {
+
+  const navigate = useNavigate();
+  const handleBack = () => {
+    if (onBack) return onBack();
+    navigate(-1);
+  };
 
   const [view, setView] = useState<"places" | "filters" | "completed">("places");
   const [allPlaces, setAllPlaces] = useState<any[]>([]);
@@ -226,10 +233,10 @@ export default function LandParcelDiscovery({ onBack, onDiscover }: LandParcelDi
   // ---------- COMPLETED VIEW (Hidden - just prevents re-render) ----------
   if (view === "completed") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-sky-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center p-8 bg-white/90 rounded-[2rem] shadow-card border border-slate-200/70">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading results...</p>
+          <p className="text-slate-700 font-medium">Loading results...</p>
         </div>
       </div>
     );
@@ -238,8 +245,8 @@ export default function LandParcelDiscovery({ onBack, onDiscover }: LandParcelDi
   // ---------- FILTERS VIEW ----------
   if (view === "filters") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <header className="bg-white shadow-sm border-b">
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-sky-50 to-indigo-50">
+        <header className="bg-white/90 shadow-lg border border-slate-200/70 backdrop-blur-lg">
           <div className="container mx-auto px-4 py-4">
             <Button
               variant="ghost"
@@ -252,7 +259,7 @@ export default function LandParcelDiscovery({ onBack, onDiscover }: LandParcelDi
         </header>
 
         <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Apply Filters</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Apply Filters</h1>
           <p className="text-slate-600 mb-8">
             Refine your search with additional filters for <strong>{selectedPlace?.name}</strong>
           </p>
@@ -323,19 +330,17 @@ export default function LandParcelDiscovery({ onBack, onDiscover }: LandParcelDi
 
   // ---------- PLACES VIEW ----------
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-sky-50 to-indigo-50">
+      <header className="bg-white/90 shadow-lg border border-slate-200/70 backdrop-blur-lg">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          {onBack && (
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={onBack}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          )}
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={handleBack}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Select Your Area</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">Select Your Area</h1>
         <p className="text-slate-600 mb-6">
           Choose the Bangalore location where you want to find land parcels
         </p>

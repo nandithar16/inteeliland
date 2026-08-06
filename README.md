@@ -1,73 +1,55 @@
-# Welcome to your Lovable project
+# InteeliLand
 
-## Project info
+InteeliLand is a polished land parcel assessment and real estate insight dashboard built with React, TypeScript, Vite, Tailwind CSS, and Supabase.
 
-**URL**: https://lovable.dev/projects/de5e0db5-32f3-44e2-86e1-ce5306aa8d03
+## Overview
 
-## How can I edit this code?
+This application offers:
+- Parcel discovery and filtered search
+- Detailed land parcel assessment with infrastructure scoring
+- Back-navigation support across screens
+- A premium UI redesign for professional presentation
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- Responsive, card-based layouts
+- Interactive parcel detail and analysis screens
+- Map preview integration
+- Refined app branding and UX polish
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/de5e0db5-32f3-44e2-86e1-ce5306aa8d03) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ or compatible LTS
+- npm
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Install
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+npm install
+```
 
-Follow these steps:
+### Run locally
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open the local URL shown by Vite in your browser.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Project structure
 
-**Use GitHub Codespaces**
+- `src/` — application source code
+- `src/components/` — reusable UI and screen components
+- `src/pages/` — route/page-level components
+- `src/Supabase/` — Supabase client setup
+- `src/index.css` — global theme and Tailwind utilities
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## GitHub repo
 
-## What technologies are used for this project?
+https://github.com/nandithar16/inteeliland
 
-This project is built with:
+## About
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/de5e0db5-32f3-44e2-86e1-ce5306aa8d03) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project was updated with a modern, elegant design and better back-navigation behavior while preserving its core functionality.
