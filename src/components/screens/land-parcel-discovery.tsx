@@ -12,6 +12,28 @@ interface LandParcelDiscoveryProps {
   onDiscover?: (filters: any) => void;
 }
 
+const bangaloreLocations = [
+  { name: "Indiranagar", latitude: 12.9719, longitude: 77.6412 },
+  { name: "JP Nagar", latitude: 12.9082, longitude: 77.5855 },
+  { name: "Whitefield", latitude: 12.9698, longitude: 77.7499 },
+  { name: "Sarjapur", latitude: 12.8813, longitude: 77.7612 },
+  { name: "Electronic City", latitude: 12.8451, longitude: 77.6602 },
+  { name: "Koramangala", latitude: 12.9352, longitude: 77.6245 },
+  { name: "Devanahalli", latitude: 13.2426, longitude: 77.7085 },
+  { name: "Marathahalli", latitude: 12.9591, longitude: 77.6974 },
+  { name: "Mahadevapura", latitude: 12.9897, longitude: 77.6978 },
+  { name: "Hebbal", latitude: 13.0358, longitude: 77.597 },
+  { name: "Yelahanka", latitude: 13.1007, longitude: 77.5963 },
+  { name: "HSR Layout", latitude: 12.9121, longitude: 77.6446 },
+  { name: "BTM Layout", latitude: 12.9165, longitude: 77.6101 },
+  { name: "Jayanagar", latitude: 12.925, longitude: 77.5838 },
+  { name: "Banashankari", latitude: 12.925, longitude: 77.5487 },
+  { name: "Malleshwaram", latitude: 13.0038, longitude: 77.5703 },
+  { name: "Rajajinagar", latitude: 12.9915, longitude: 77.5528 },
+  { name: "Vijayanagar", latitude: 12.9716, longitude: 77.5344 },
+  { name: "Basavanagudi", latitude: 12.9423, longitude: 77.5738 },
+];
+
 export default function LandParcelDiscovery({ onBack, onDiscover }: LandParcelDiscoveryProps) {
 
   const navigate = useNavigate();
@@ -55,28 +77,6 @@ export default function LandParcelDiscovery({ onBack, onDiscover }: LandParcelDi
     "Investment Opportunities",
     "Gated Community Plots",
     "Ready to Construct Land",
-  ];
-
-  const bangaloreLocations = [
-    { name: "Indiranagar", latitude: 12.9719, longitude: 77.6412 },
-    { name: "JP Nagar", latitude: 12.9082, longitude: 77.5855 },
-    { name: "Whitefield", latitude: 12.9698, longitude: 77.7499 },
-    { name: "Sarjapur", latitude: 12.8813, longitude: 77.7612 },
-    { name: "Electronic City", latitude: 12.8451, longitude: 77.6602 },
-    { name: "Koramangala", latitude: 12.9352, longitude: 77.6245 },
-    { name: "Devanahalli", latitude: 13.2426, longitude: 77.7085 },
-    { name: "Marathahalli", latitude: 12.9591, longitude: 77.6974 },
-    { name: "Mahadevapura", latitude: 12.9897, longitude: 77.6978 },
-    { name: "Hebbal", latitude: 13.0358, longitude: 77.597 },
-    { name: "Yelahanka", latitude: 13.1007, longitude: 77.5963 },
-    { name: "HSR Layout", latitude: 12.9121, longitude: 77.6446 },
-    { name: "BTM Layout", latitude: 12.9165, longitude: 77.6101 },
-    { name: "Jayanagar", latitude: 12.925, longitude: 77.5838 },
-    { name: "Banashankari", latitude: 12.925, longitude: 77.5487 },
-    { name: "Malleshwaram", latitude: 13.0038, longitude: 77.5703 },
-    { name: "Rajajinagar", latitude: 12.9915, longitude: 77.5528 },
-    { name: "Vijayanagar", latitude: 12.9716, longitude: 77.5344 },
-    { name: "Basavanagudi", latitude: 12.9423, longitude: 77.5738 },
   ];
 
   useEffect(() => {

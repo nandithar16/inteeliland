@@ -1,5 +1,5 @@
 // DetailedLandParcelAnalysisWithAssessment.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/Supabase/supabaseclient";
 
 import { Button } from "@/components/ui/button";
@@ -549,17 +549,17 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
 
   // --- existing useEffects to fetch parcel + risk analysis ---
   useEffect(() => {
-  if (passedData?.latitude && passedData?.longitude) {
-    // Skip Supabase fetch — handled by user input above
-    return;
-  }
-  if (parcelId) {
-    fetchParcelData();
-  } else {
-    setError('No parcel ID provided');
-    setLoading(false);
-  }
-}, [parcelId, passedData]);
+    if (passedData?.latitude && passedData?.longitude) {
+      // Skip Supabase fetch — handled by user input above
+      return;
+    }
+    if (parcelId) {
+      fetchParcelData();
+    } else {
+      setError('No parcel ID provided');
+      setLoading(false);
+    }
+  }, [parcelId, passedData, fetchParcelData]);
 
 
   // When parcel loaded, trigger assessment & risk analysis fetches
@@ -630,7 +630,7 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
         setLoadingTransport(false);
       });
     }
-  }, [parcelData]); // only when parcelData changes
+  }, [parcelData, fetchRiskAnalysis, educationalRadius, commercialRadius, transportRadius, waterBodiesRadius]); // only when parcelData changes
 
   // Update filtered lists when radii change
   useEffect(() => {
@@ -638,28 +638,28 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
     const location = parcelData?.location || '';
     const filtered = educationalDataFull.filter(place => place.distance <= radius);
     setEducationalData(filtered.length > 0 ? filtered : (educationalDataFull.length > 0 ? filtered : getFallbackPlaces('education', location)));
-  }, [educationalRadius, educationalDataFull]);
+  }, [educationalRadius, educationalDataFull, parcelData?.location]);
 
   useEffect(() => {
     const radius = parseFloat(commercialRadius);
     const location = parcelData?.location || '';
     const filtered = commercialDataFull.filter(place => place.distance <= radius);
     setCommercialData(filtered.length > 0 ? filtered : (commercialDataFull.length > 0 ? filtered : getFallbackPlaces('commercial', location)));
-  }, [commercialRadius, commercialDataFull]);
+  }, [commercialRadius, commercialDataFull, parcelData?.location]);
 
   useEffect(() => {
     const radius = parseFloat(waterBodiesRadius);
     const location = parcelData?.location || '';
     const filtered = waterBodiesDataFull.filter(place => place.distance <= radius);
     setWaterBodiesData(filtered.length > 0 ? filtered : (waterBodiesDataFull.length > 0 ? filtered : getFallbackPlaces('water', location)));
-  }, [waterBodiesRadius, waterBodiesDataFull]);
+  }, [waterBodiesRadius, waterBodiesDataFull, parcelData?.location]);
 
   useEffect(() => {
     const radius = parseFloat(transportRadius);
     const location = parcelData?.location || '';
     const filtered = transportDataFull.filter(place => place.distance <= radius);
     setTransportData(filtered.length > 0 ? filtered : (transportDataFull.length > 0 ? filtered : getFallbackPlaces('transport', location)));
-  }, [transportRadius, transportDataFull]);
+  }, [transportRadius, transportDataFull, parcelData?.location]);
 
   // Combine scores to overall
   useEffect(() => {
@@ -683,7 +683,7 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
   }, [educationalData, commercialData, transportData, waterBodiesData, residentialProjects]);
 
   // --- existing fetches + helpers from the original DetailedLandParcelAnalysis component ---
-  const fetchRiskAnalysis = async () => {
+  const fetchRiskAnalysis = useCallback(async () => {
     if (!parcelData) return;
     
     setAnalysisLoading(true);
@@ -709,9 +709,9 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
     } finally {
       setAnalysisLoading(false);
     }
-  };
+  }, [parcelData]);
 
-  const fetchParcelData = async () => {
+  const fetchParcelData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -787,7 +787,7 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
     } finally {
       setLoading(false);
     }
-  };
+  }, [parcelId]);
 
   const calculateScores = () => {
     if (!parcelData) return { overall: 0, infrastructureRating: 0 };
