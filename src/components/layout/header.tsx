@@ -10,7 +10,7 @@ interface HeaderProps {
   className?: string;
 }
 
-export function Header({ title = "Intelland", showBackButton = false, onBack, className }: HeaderProps) {
+export function Header({ title = "Intel-Land", showBackButton = false, onBack, className }: HeaderProps) {
   const navigate = useNavigate();
 
   const handleBack = () => {
