@@ -90,7 +90,7 @@ const Index = () => {
       return discoveryFilters ? (
         <FilteredLandParcels
           filters={discoveryFilters}
-          onBack={handleBackToDiscovery}
+          onBack={handleBackToMain}
           onViewDetails={handleViewParcelDetails}
         />
       ) : null;
