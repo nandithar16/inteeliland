@@ -323,6 +323,112 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
     if (onBack) return onBack();
     navigate(-1);
   };
+
+  const fetchRiskAnalysis = useCallback(async () => {
+    if (!parcelData) return;
+
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+
+    try {
+      const pricePerSqftStr = String(parcelData.price_per_sqft || '0');
+      const pricePerSqft = parseFloat(pricePerSqftStr.replace(/[^0-9.-]/g, '') || '0');
+
+      const locationData: LocationData = {
+        latitude: parcelData.latitude || 13.1986,
+        longitude: parcelData.longitude || 77.7101,
+        locationName: parcelData.location || 'Bangalore',
+        area: parcelData.total_area,
+        pricePerSqft: pricePerSqft
+      };
+
+      const result = await googleEarthAIService.analyzeLandParcel(locationData);
+      setRiskAnalysis(result);
+    } catch (err: any) {
+      console.error('Error fetching risk analysis:', err);
+      setAnalysisError(err.message || 'Failed to load risk analysis');
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }, [parcelData]);
+
+  const fetchParcelData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('=== FETCHING PARCEL DATA ===');
+      console.log('Parcel ID:', parcelId);
+      console.log('Parcel ID type:', typeof parcelId);
+
+      const { data: allData } = await supabase
+        .from('landdetails')
+        .select('*')
+        .limit(5);
+
+      console.log('Sample of all data:', allData);
+      console.log('Sample data structure:', allData?.[0]);
+      console.log('Available columns:', allData?.[0] ? Object.keys(allData[0]) : 'No data');
+
+      let data: any = null;
+
+      console.log('Strategy 1: Trying with id field...');
+      const result1 = await supabase
+        .from('landdetails')
+        .select('*')
+        .eq('id', parcelId);
+
+      console.log('Strategy 1 result:', result1.data);
+
+      if (result1.data && result1.data.length > 0) {
+        data = result1.data[0];
+        console.log('✓ Found with id field');
+      }
+
+      if (!data) {
+        console.log('Strategy 2: Trying with property_name...');
+        const result2 = await supabase
+          .from('landdetails')
+          .select('*')
+          .eq('property_name', parcelId);
+
+        console.log('Strategy 2 result:', result2.data);
+
+        if (result2.data && result2.data.length > 0) {
+          data = result2.data[0];
+          console.log('✓ Found with property_name');
+        }
+      }
+
+      if (!data && !isNaN(Number(parcelId))) {
+        console.log('Strategy 3: Trying with numeric id...');
+        const result3 = await supabase
+          .from('landdetails')
+          .select('*')
+          .eq('id', Number(parcelId));
+
+        console.log('Strategy 3 result:', result3.data);
+
+        if (result3.data && result3.data.length > 0) {
+          data = result3.data[0];
+          console.log('✓ Found with numeric id');
+        }
+      }
+
+      if (!data) {
+        console.error('All strategies failed. No data found.');
+        throw new Error(`No parcel found with identifier: ${parcelId}`);
+      }
+
+      console.log('Successfully fetched parcel data:', data);
+      setParcelData(data);
+    } catch (err: any) {
+      console.error('Error fetching parcel data:', err);
+      setError(err.message || 'Failed to load parcel details');
+    } finally {
+      setLoading(false);
+    }
+  }, [parcelId]);
   
   // Risk Analysis state (existing)
   const [riskAnalysis, setRiskAnalysis] = useState<LandAnalysisResult | null>(null);
@@ -683,112 +789,6 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
   }, [educationalData, commercialData, transportData, waterBodiesData, residentialProjects]);
 
   // --- existing fetches + helpers from the original DetailedLandParcelAnalysis component ---
-  const fetchRiskAnalysis = useCallback(async () => {
-    if (!parcelData) return;
-    
-    setAnalysisLoading(true);
-    setAnalysisError(null);
-    
-    try {
-      const pricePerSqftStr = String(parcelData.price_per_sqft || '0');
-      const pricePerSqft = parseFloat(pricePerSqftStr.replace(/[^0-9.-]/g, '') || '0');
-      
-      const locationData: LocationData = {
-        latitude: parcelData.latitude || 13.1986,
-        longitude: parcelData.longitude || 77.7101,
-        locationName: parcelData.location || 'Bangalore',
-        area: parcelData.total_area,
-        pricePerSqft: pricePerSqft
-      };
-      
-      const result = await googleEarthAIService.analyzeLandParcel(locationData);
-      setRiskAnalysis(result);
-    } catch (err: any) {
-      console.error('Error fetching risk analysis:', err);
-      setAnalysisError(err.message || 'Failed to load risk analysis');
-    } finally {
-      setAnalysisLoading(false);
-    }
-  }, [parcelData]);
-
-  const fetchParcelData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log('=== FETCHING PARCEL DATA ===');
-      console.log('Parcel ID:', parcelId);
-      console.log('Parcel ID type:', typeof parcelId);
-      
-      const { data: allData } = await supabase
-        .from('landdetails')
-        .select('*')
-        .limit(5);
-      
-      console.log('Sample of all data:', allData);
-      console.log('Sample data structure:', allData?.[0]);
-      console.log('Available columns:', allData?.[0] ? Object.keys(allData[0]) : 'No data');
-      
-      let data: any = null;
-      
-      console.log('Strategy 1: Trying with id field...');
-      const result1 = await supabase
-        .from('landdetails')
-        .select('*')
-        .eq('id', parcelId);
-      
-      console.log('Strategy 1 result:', result1.data);
-      
-      if (result1.data && result1.data.length > 0) {
-        data = result1.data[0];
-        console.log('✓ Found with id field');
-      }
-      
-      if (!data) {
-        console.log('Strategy 2: Trying with property_name...');
-        const result2 = await supabase
-          .from('landdetails')
-          .select('*')
-          .eq('property_name', parcelId);
-        
-        console.log('Strategy 2 result:', result2.data);
-        
-        if (result2.data && result2.data.length > 0) {
-          data = result2.data[0];
-          console.log('✓ Found with property_name');
-        }
-      }
-      
-      if (!data && !isNaN(Number(parcelId))) {
-        console.log('Strategy 3: Trying with numeric id...');
-        const result3 = await supabase
-          .from('landdetails')
-          .select('*')
-          .eq('id', Number(parcelId));
-        
-        console.log('Strategy 3 result:', result3.data);
-        
-        if (result3.data && result3.data.length > 0) {
-          data = result3.data[0];
-          console.log('✓ Found with numeric id');
-        }
-      }
-
-      if (!data) {
-        console.error('All strategies failed. No data found.');
-        throw new Error(`No parcel found with identifier: ${parcelId}`);
-      }
-      
-      console.log('Successfully fetched parcel data:', data);
-      setParcelData(data);
-    } catch (err: any) {
-      console.error('Error fetching parcel data:', err);
-      setError(err.message || 'Failed to load parcel details');
-    } finally {
-      setLoading(false);
-    }
-  }, [parcelId]);
-
   const calculateScores = () => {
     if (!parcelData) return { overall: 0, infrastructureRating: 0 };
 
