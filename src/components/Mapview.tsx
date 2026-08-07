@@ -79,7 +79,8 @@ export default function MapView({ lat, lng }: MapViewProps) {
             zoom: 13,
           }}
           style={{ width: "100%", height: "100%" }}
-          mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+          mapStyle="https://demotiles.maplibre.org/style.json"
+          attributionControl={false}
           onClick={handleMapClick}
         >
           <NavigationControl position="top-right" />

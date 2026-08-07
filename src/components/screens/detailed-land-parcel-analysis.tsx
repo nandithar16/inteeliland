@@ -1131,7 +1131,8 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
                       zoom: 13,
                     }}
                     style={{ width: "100%", height: "100%" }}
-                    mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+                    mapStyle="https://demotiles.maplibre.org/style.json"
+                    attributionControl={false}
                   >
                     <NavigationControl position="top-right" />
                     <Marker longitude={lng} latitude={lat} color="#ef4444" />
