@@ -16,7 +16,7 @@ const App = () => (
       <Toaster />
       <Sonner />
 
-      <BrowserRouter>
+      <BrowserRouter basename="/intelliland">
         <Routes>
           {/* 🏠 Main Landing Page */}
           <Route path="/" element={<Index />} />
