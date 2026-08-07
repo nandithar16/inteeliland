@@ -1,6 +1,6 @@
-# Intelland
+# InteeliLand
 
-Intelland is a polished land parcel assessment and real estate insight dashboard built with React, TypeScript, Vite, Tailwind CSS, and Supabase.
+InteeliLand is a polished land parcel assessment and real estate insight dashboard built with React, TypeScript, Vite, Tailwind CSS, and Supabase.
 
 ## Overview
 
@@ -48,7 +48,7 @@ Open the local URL shown by Vite in your browser.
 
 ## GitHub repo
 
-https://github.com/nandithar16/intelland
+https://github.com/nandithar16/inteeliland
 
 ## Deployment
 
