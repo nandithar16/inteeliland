@@ -659,10 +659,24 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
       // Skip Supabase fetch — handled by user input above
       return;
     }
+    
     if (parcelId) {
       fetchParcelData();
     } else {
-      setError('No parcel ID provided');
+      // Use default Bangalore coordinates if no parcelId
+      setParcelData({
+        id: "default",
+        property_name: "Land Parcel Assessment",
+        property_type: "Assessment Location",
+        location: "Bangalore, Karnataka",
+        url: "",
+        total_area: 2400,
+        total_price: "₹75,00,000",
+        price_per_sqft: "₹3125",
+        source: "Default Location",
+        latitude: 13.1986,
+        longitude: 77.7101,
+      });
       setLoading(false);
     }
   }, [parcelId, passedData, fetchParcelData]);
@@ -999,20 +1013,12 @@ export function DetailedLandParcelAnalysis({ parcelId, onBack }: DetailedLandPar
     );
   }
 
-  if (error || !parcelData) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 via-sky-50 to-indigo-50">
         <Header title="Detailed Land Parcel Analysis" showBackButton onBack={onBack} />
-        <div className="flex items-center justify-center min-h-[70vh] px-4">
-          <Card className="panel-surface p-8 text-center max-w-md">
-            <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-3">Failed to Load Parcel</h3>
-            <p className="text-destructive mb-6">{error || 'Parcel not found'}</p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Button onClick={handleBack} size="lg" className="min-w-[8rem]">Back to Results</Button>
-              <Button variant="outline" onClick={fetchParcelData} size="lg" className="min-w-[8rem]">Retry</Button>
-            </div>
-          </Card>
+        <div className="flex items-center justify-center min-h-[70vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
         </div>
       </div>
     );
