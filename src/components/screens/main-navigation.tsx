@@ -201,7 +201,7 @@ export default function MainNavigation({
           </div>
             <h1 className="text-6xl md:text-7xl font-extrabold mb-6 tracking-tight">
             <span className="bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
-              InteeliLand
+              Intelland
             </span>
           </h1>
           <div className="flex flex-wrap items-center justify-center gap-8 mt-12">
